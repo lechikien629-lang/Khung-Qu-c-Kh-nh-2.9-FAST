@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Thay avatar vào khung</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin-top: 30px;
+    }
+    .frame {
+      position: relative;
+      display: inline-block;
+      width: 300px;
+      height: 300px;
+      overflow: hidden;
+      border: 2px solid #ccc;
+    }
+    .frame img.bg {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+      object-fit: contain;
+      z-index: 2; /* Khung nằm trên */
+      pointer-events: none; /* tránh bắt chuột */
+    }
+    .frame img.avatar {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+      object-fit: cover;
+      z-index: 1; /* Avatar nằm dưới khung */
+      transform-origin: center center; /* Tâm xoay */
+      cursor: grab;
+    }
+    .controls {
+      margin-top: 20px;
+    }
+    input[type=range] {
+      width: 200px;
+    }
+    button {
+      margin: 5px;
+      padding: 8px 15px;
+      border: none;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+    .choose-btn { background: blue; color: white; }
+    .download-btn { background: green; color: white; }
+    .flip-btn { background: gray; color: white; }
+  </style>
+</head>
+<body>
+  <h2>Chèn Avatar vào Khung</h2>
+  <div class="frame" id="frame">
+    <img id="avatar" class="avatar" src="" alt="avatar">
+    <img class="bg" src="khung.png" alt="Khung">
+  </div>
+
+  <div class="controls">
+    <div>
+      <label>Zoom:</label>
+      <input type="range" id="zoom" min="0.5" max="2" step="0.01" value="1">
+    </div>
+    <div>
+      <label>Xoay:</label>
+      <input type="range" id="rotate" min="-180" max="180" step="1" value="0">
+    </div>
+    <button class="flip-btn" onclick="flipImage()">Lật ảnh</button>
+    <br>
+    <input type="file" accept="image/*" onchange="loadAvatar(event)" class="choose-btn">
+    <button class="download-btn" onclick="downloadImage()">Tải về</button>
+  </div>
+
+  <script>
+    let scale = 1, rotate = 0, flipped = 1;
+    let offsetX = 0, offsetY = 0;
+    let isDragging = false, startX, startY;
+
+    const avatar = document.getElementById('avatar');
+
+    function loadAvatar(event) {
+      avatar.src = URL.createObjectURL(event.target.files[0]);
+    }
+
+    // Zoom
+    document.getElementById('zoom').addEventListener('input', function() {
+      scale = this.value;
+      applyTransform();
+    });
+
+    // Xoay
+    document.getElementById('rotate').addEventListener('input', function() {
+      rotate = this.value;
+      applyTransform();
+    });
+
+    // Lật ảnh
+    function flipImage() {
+      flipped *= -1;
+      applyTransform();
+    }
+
+    // Áp dụng transform
+    function applyTransform() {
+      avatar.style.transform = 
+        `translate(${offsetX}px, ${offsetY}px) scale(${scale * flipped}, ${scale}) rotate(${rotate}deg)`;
+    }
+
+    // Kéo bằng chuột
+    avatar.addEventListener('mousedown', (e) => {
+      isDragging = true;
+      startX = e.clientX - offsetX;
+      startY = e.clientY - offsetY;
+      avatar.style.cursor = "grabbing";
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      offsetX = e.clientX - startX;
+      offsetY = e.clientY - startY;
+      applyTransform();
+    });
+
+    document.addEventListener('mouseup', () => {
+      isDragging = false;
+      avatar.style.cursor = "grab";
+    });
+
+    // Kéo bằng cảm ứng (điện thoại)
+    avatar.addEventListener('touchstart', (e) => {
+      isDragging = true;
+      const touch = e.touches[0];
+      startX = touch.clientX - offsetX;
+      startY = touch.clientY - offsetY;
+    });
+
+    avatar.addEventListener('touchmove', (e) => {
+      if (!isDragging) return;
+      const touch = e.touches[0];
+      offsetX = touch.clientX - startX;
+      offsetY = touch.clientY - startY;
+      applyTransform();
+    });
+
+    avatar.addEventListener('touchend', () => {
+      isDragging = false;
+    });
+
+    // Xuất ảnh để tải về
+    function downloadImage() {
+      const frame = document.getElementById('frame');
+      html2canvas(frame).then(canvas => {
+        const link = document.createElement('a');
+        link.download = 'avatar-khung.png';
+        link.href = canvas.toDataURL();
+        link.click();
+      });
+    }
+  </script>
+
+  <!-- Thư viện để chụp khung thành ảnh -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</body>
+</html>
